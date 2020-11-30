@@ -19,7 +19,7 @@ jobs:
     strategy:
       matrix:
         go-version: [1.14.x, 1.15.x, 1.x]
-        platform: [ubuntu-latest]
+        platform: [ubuntu-latest, windows-latest, macos-latest]
     runs-on: ${{ matrix.platform }}
     steps:
 
@@ -48,18 +48,3 @@ jobs:
 
       - name: gotestsum
         run: gotestsum --format short-verbose ./...
-
-      - name: compile for windows
-        env:
-          GOOS: windows
-        run: go build
-
-      - name: compile for linux
-        env:
-          GOOS: linux
-        run: go build
-
-      - name: compile for darwin
-        env:
-          GOOS: darwin
-        run: go build
