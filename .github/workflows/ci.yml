@@ -48,3 +48,18 @@ jobs:
 
       - name: gotestsum
         run: gotestsum --format short-verbose ./...
+
+      - name: compile for windows
+        env:
+          GOOS: windows
+        run: go build
+
+      - name: compile for linux
+        env:
+          GOOS: linux
+        run: go build
+
+      - name: compile for darwin
+        env:
+          GOOS: darwin
+        run: go build
