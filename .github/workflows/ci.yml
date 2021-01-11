@@ -19,7 +19,7 @@ jobs:
     strategy:
       matrix:
         go-version: [1.14.x, 1.15.x, 1.x]
-        platform: [ubuntu-latest, windows-2019, macos-11.0]
+        platform: [ubuntu-latest, windows-latest, macos-latest]
     runs-on: ${{ matrix.platform }}
     steps:
 
@@ -47,8 +47,14 @@ jobs:
         run: go vet ./...
 
       - name: compile
-        run: go build
+        run: |
+          echo "building/compiling for operating system: $GOOS ..."
+          go build
 
       - name: gotestsum
-        if: ${{ matrix.platform != 'windows-2019' }}
+        # don't run tests unless we are on linux
+        # there are a few considerations we need to account
+        # for like installing docker on the mac platform and
+        # using a network mode other than bridge for windows
+        if: ${{ matrix.platform == 'ubuntu-latest' }}
         run: gotestsum --format short-verbose ./...
