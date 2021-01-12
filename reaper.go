@@ -55,6 +55,13 @@ func NewReaper(ctx context.Context, sessionID string, provider ReaperProvider, r
 
 	listeningPort := nat.Port("8080/tcp")
 
+	var source string
+	if runtime.GOOS == "windows" {
+		source = "//var/run/docker.sock"
+	} else {
+		source = "/var/run/docker.sock"
+	}
+
 	req := ContainerRequest{
 		Image:        reaperImage(reaperImageName),
 		ExposedPorts: []string{string(listeningPort)},
@@ -64,7 +71,7 @@ func NewReaper(ctx context.Context, sessionID string, provider ReaperProvider, r
 		},
 		SkipReaper: true,
 		BindMounts: map[string]string{
-			"/var/run/docker.sock": "/var/run/docker.sock",
+			source: "/var/run/docker.sock",
 		},
 		AutoRemove: true,
 		WaitingFor: wait.ForListeningPort(listeningPort),
