@@ -15,6 +15,7 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+	"runtime"
 
 	"github.com/cenkalti/backoff"
 	"github.com/docker/docker/errdefs"
@@ -38,6 +39,7 @@ var _ Container = (*DockerContainer)(nil)
 const (
 	Bridge        = "bridge"         // Bridge network name (as well as driver)
 	ReaperDefault = "reaper_default" // Default network name when bridge is not available
+	Nat = "nat"
 )
 
 // DockerContainer represents a container started using Docker
@@ -895,13 +897,20 @@ func getDefaultNetwork(ctx context.Context, cli *client.Client) (string, error) 
 		return "", err
 	}
 
+	var networkName string
+	if runtime.GOOS == "windows" {
+		networkName = Nat
+	} else {
+		networkName = Bridge
+	}
+
 	reaperNetwork := ReaperDefault
 
 	reaperNetworkExists := false
 
 	for _, net := range networkResources {
-		if net.Name == Bridge {
-			return Bridge, nil
+		if net.Name == networkName {
+			return networkName, nil
 		}
 
 		if net.Name == reaperNetwork {
@@ -912,7 +921,7 @@ func getDefaultNetwork(ctx context.Context, cli *client.Client) (string, error) 
 	// Create a bridge network for the container communications
 	if !reaperNetworkExists {
 		_, err = cli.NetworkCreate(ctx, reaperNetwork, types.NetworkCreate{
-			Driver:     Bridge,
+			Driver:     networkName,
 			Attachable: true,
 			Labels: map[string]string{
 				TestcontainerLabel: "true",
