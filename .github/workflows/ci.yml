@@ -51,10 +51,6 @@ jobs:
           echo "building/compiling for operating system: $GOOS ..."
           go build
 
-      - name: gotestsum
-        # don't run tests unless we are on linux
-        # there are a few considerations we need to account
-        # for like installing docker on the mac platform and
-        # using a network mode other than bridge for windows
-        if: ${{ matrix.platform == 'ubuntu-latest' }}
+      - name: gotestsum -- -run TestContainerCreationWithName
+        if: ${{ matrix.platform != 'macos-latest' }}
         run: gotestsum --format short-verbose ./...

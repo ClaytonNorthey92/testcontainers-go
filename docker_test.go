@@ -597,7 +597,6 @@ func TestContainerCreationWithName(t *testing.T) {
 			},
 			WaitingFor: wait.ForListeningPort("80/tcp"),
 			Name:       creationName,
-			Networks:   []string{"bridge"},
 		},
 		Started: true,
 	})
