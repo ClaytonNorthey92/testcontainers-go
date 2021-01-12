@@ -72,7 +72,7 @@ func NewReaper(ctx context.Context, sessionID string, provider ReaperProvider, r
 		},
 		SkipReaper: true,
 		BindMounts: map[string]string{
-			source: "/var/run/docker.sock",
+			"/var/run/docker.sock": source,
 		},
 		AutoRemove: true,
 		WaitingFor: wait.ForListeningPort(listeningPort),
