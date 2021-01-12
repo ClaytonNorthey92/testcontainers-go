@@ -51,6 +51,6 @@ jobs:
           echo "building/compiling for operating system: $GOOS ..."
           go build
 
-      - name: gotestsum -- -run TestContainerCreationWithName
+      - name: gotestsum -- -run=TestContainerCreationWithName
         if: ${{ matrix.platform != 'macos-latest' }}
         run: gotestsum --format short-verbose ./...

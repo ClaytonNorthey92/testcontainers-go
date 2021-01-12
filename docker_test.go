@@ -597,6 +597,7 @@ func TestContainerCreationWithName(t *testing.T) {
 			},
 			WaitingFor: wait.ForListeningPort("80/tcp"),
 			Name:       creationName,
+			NetworkMode: "nat",
 		},
 		Started: true,
 	})
