@@ -32,5 +32,8 @@ jobs:
       - name: Check out code into the Go module directory
         uses: actions/checkout@v2
 
+      - name: Does docker work?
+        uses: docker run --rm -v /var/run/docker.sock:/var/run/docker.sock docker:latest version
+
       - name: test it
         run: go test -v -run=TestContainerCreationWithName ./...
