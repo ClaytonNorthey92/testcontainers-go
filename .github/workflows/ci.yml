@@ -33,7 +33,7 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Does docker work?
-        run: docker run --rm -v /var/run/docker.sock:/var/run/docker.sock docker:latest version
+        run: docker run --rm -v /var/run/docker.sock:/var/run/docker.sock alpine:latest
 
       - name: test it
         run: go test -v -run=TestContainerCreationWithName ./...
