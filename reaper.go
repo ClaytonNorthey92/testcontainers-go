@@ -58,7 +58,7 @@ func NewReaper(ctx context.Context, sessionID string, provider ReaperProvider, r
 
 	var source string
 	if runtime.GOOS == "windows" {
-		source = "//var/run/docker.sock"
+		source = "/var/run/docker.sock"
 	} else {
 		source = "/var/run/docker.sock"
 	}
@@ -72,7 +72,7 @@ func NewReaper(ctx context.Context, sessionID string, provider ReaperProvider, r
 		},
 		SkipReaper: true,
 		BindMounts: map[string]string{
-			"/var/run/docker.sock": source,
+			source: "/var/run/docker.sock",
 		},
 		AutoRemove: true,
 		WaitingFor: wait.ForListeningPort(listeningPort),
