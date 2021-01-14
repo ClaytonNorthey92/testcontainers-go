@@ -591,7 +591,7 @@ func TestContainerCreationWithName(t *testing.T) {
 	nginxPort := "80/tcp"
 	nginxC, err := GenericContainer(ctx, GenericContainerRequest{
 		ContainerRequest: ContainerRequest{
-			Image: "nginx",
+			Image: "golang:1.14",
 			ExposedPorts: []string{
 				nginxPort,
 			},

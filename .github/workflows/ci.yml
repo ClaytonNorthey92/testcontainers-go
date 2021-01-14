@@ -33,7 +33,7 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Get nginx
-        run: docker pull nginx:latest
+        run: docker pull golang:1.14
 
       - name: test it
         run: go test -v -run=TestContainerCreationWithName ./...
