@@ -13,9 +13,9 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
-	"runtime"
 
 	"github.com/cenkalti/backoff"
 	"github.com/docker/docker/errdefs"
@@ -39,7 +39,7 @@ var _ Container = (*DockerContainer)(nil)
 const (
 	Bridge        = "bridge"         // Bridge network name (as well as driver)
 	ReaperDefault = "reaper_default" // Default network name when bridge is not available
-	Nat = "nat"
+	Nat           = "nat"
 )
 
 // DockerContainer represents a container started using Docker

@@ -595,9 +595,10 @@ func TestContainerCreationWithName(t *testing.T) {
 			ExposedPorts: []string{
 				nginxPort,
 			},
-			WaitingFor: wait.ForListeningPort("80/tcp"),
-			Name:       creationName,
-			SkipReaper: true,
+			WaitingFor:      wait.ForListeningPort("80/tcp"),
+			Name:            creationName,
+			SkipReaper:      true,
+			AlwaysPullImage: true,
 		},
 		Started: true,
 	})
