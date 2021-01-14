@@ -56,12 +56,7 @@ func NewReaper(ctx context.Context, sessionID string, provider ReaperProvider, r
 
 	listeningPort := nat.Port("8080/tcp")
 
-	var source string
-	if runtime.GOOS == "windows" {
-		source = "\\\\.\\pipe\\docker_engine"
-	} else {
-		source = "/var/run/docker.sock"
-	}
+	source := "/var/run/docker.sock"
 
 	req := ContainerRequest{
 		Image:        reaperImage(reaperImageName),
