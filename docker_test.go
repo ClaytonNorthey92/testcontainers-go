@@ -623,7 +623,7 @@ func TestContainerCreationWithName(t *testing.T) {
 		t.Errorf("Expected networks 1. Got '%d'.", len(networks))
 	}
 	network := networks[0]
-	if network != "bridge" {
+	if network != "nat" {
 		t.Errorf("Expected network name '%s'. Got '%s'.", "nat", network)
 	}
 }
