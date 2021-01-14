@@ -32,5 +32,8 @@ jobs:
       - name: Check out code into the Go module directory
         uses: actions/checkout@v2
 
+      - name: Get nginx
+        run: docker pull nginx:latest
+
       - name: test it
         run: go test -v -run=TestContainerCreationWithName ./...
