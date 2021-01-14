@@ -588,7 +588,6 @@ func TestContainerCreationWithName(t *testing.T) {
 
 	creationName := fmt.Sprintf("%s_%d", "test_container", time.Now().Unix())
 	expectedName := "/" + creationName // inspect adds '/' in the beginning
-	nginxPort := "80/tcp"
 	nginxC, err := GenericContainer(ctx, GenericContainerRequest{
 		ContainerRequest: ContainerRequest{
 			Image:           "golang:1.14",
