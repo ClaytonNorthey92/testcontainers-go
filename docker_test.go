@@ -593,9 +593,6 @@ func TestContainerCreationWithName(t *testing.T) {
 		ContainerRequest: ContainerRequest{
 			Image: "golang:1.14",
 			Cmd:   []string{"echo", "hello"},
-			ExposedPorts: []string{
-				nginxPort,
-			},
 			WaitingFor:      wait.ForLog("hello").WithStartupTimeout(5 * time.Second),
 			Name:            creationName,
 			SkipReaper:      true,
@@ -629,21 +626,6 @@ func TestContainerCreationWithName(t *testing.T) {
 	network := networks[0]
 	if network != "bridge" {
 		t.Errorf("Expected network name '%s'. Got '%s'.", "bridge", network)
-	}
-	ip, err := nginxC.Host(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
-	port, err := nginxC.MappedPort(ctx, "80")
-	if err != nil {
-		t.Fatal(err)
-	}
-	resp, err := http.Get(fmt.Sprintf("http://%s:%s", ip, port.Port()))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if resp.StatusCode != http.StatusOK {
-		t.Errorf("Expected status code %d. Got %d.", http.StatusOK, resp.StatusCode)
 	}
 }
 
