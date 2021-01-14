@@ -10,7 +10,6 @@ import (
 	"strings"
 	"sync"
 	"time"
-	"runtime"
 
 	"github.com/pkg/errors"
 )
