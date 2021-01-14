@@ -591,8 +591,8 @@ func TestContainerCreationWithName(t *testing.T) {
 	nginxPort := "80/tcp"
 	nginxC, err := GenericContainer(ctx, GenericContainerRequest{
 		ContainerRequest: ContainerRequest{
-			Image: "golang:1.14",
-			Cmd:   []string{"echo", "hello"},
+			Image:           "golang:1.14",
+			Cmd:             []string{"echo", "hello"},
 			WaitingFor:      wait.ForLog("hello").WithStartupTimeout(5 * time.Second),
 			Name:            creationName,
 			SkipReaper:      true,
