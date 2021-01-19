@@ -35,8 +35,12 @@ import (
 func decideImage(r *ContainerRequest) {
 	fmt.Println(runtime.GOOS)
 	if runtime.GOOS == "windows" {
+		p, err := os.Getwd()
+		if err != nil {
+			panic(err)
+		}
 		r.FromDockerfile = FromDockerfile{
-			Dockerfile: fmt.Sprintf("%s\\testresources\\echoserver.Dockerfile", os.Getwd()),
+			Dockerfile: fmt.Sprintf("%s\\testresources\\echoserver.Dockerfile", p),
 			Context:    ".",
 		}
 		r.ExposedPorts = []string{"8080/tcp"}
