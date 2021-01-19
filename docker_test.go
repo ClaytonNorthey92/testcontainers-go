@@ -65,12 +65,18 @@ func TestContainerAttachedToNewNetwork(t *testing.T) {
 
 	decideImage(&gcr.ContainerRequest)
 
-	newNetwork, err := GenericNetwork(ctx, GenericNetworkRequest{
+	genericNetworkRequest := GenericNetworkRequest{
 		NetworkRequest: NetworkRequest{
 			Name:           networkName,
 			CheckDuplicate: true,
 		},
-	})
+	}
+
+	if runtime.GOOS == "windows" {
+		genericNetworkRequest.SkipReaper = true
+	}
+
+	newNetwork, err := GenericNetwork(ctx, genericNetworkRequest)
 
 	if err != nil {
 		t.Fatal(err)
