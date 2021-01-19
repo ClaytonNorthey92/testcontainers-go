@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -36,10 +37,11 @@ func decideImage(r *ContainerRequest) {
 			Dockerfile: "echo.Dockerfile",
 			Context:    "./testresources",
 		}
-		r.ExposedPorts = "8080/tcp"
+		r.ExposedPorts = []string{"8080/tcp"}
+		r.SkipReaper = true
 	} else {
 		r.Image = "nginx"
-		r.ExposedPorts = "80/tcp"
+		r.ExposedPorts = []string{"80/tcp"}
 	}
 }
 
