@@ -61,7 +61,7 @@ func TestContainerAttachedToNewNetwork(t *testing.T) {
 		},
 	}
 
-	decideImage(gcr.ContainerRequest)
+	decideImage(&gcr.ContainerRequest)
 
 	newNetwork, err := GenericNetwork(ctx, GenericNetworkRequest{
 		NetworkRequest: NetworkRequest{
