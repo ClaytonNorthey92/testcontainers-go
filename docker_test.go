@@ -35,8 +35,8 @@ func decideImage(r *ContainerRequest) {
 	fmt.Println(runtime.GOOS)
 	if runtime.GOOS == "windows" {
 		r.FromDockerfile = FromDockerfile{
-			Dockerfile: "echo.Dockerfile",
-			Context:    "./testresources",
+			Dockerfile: "echoserver.Dockerfile",
+			Context:    "./testresources/",
 		}
 		r.ExposedPorts = []string{"8080/tcp"}
 		r.SkipReaper = true
@@ -83,13 +83,13 @@ func TestContainerAttachedToNewNetwork(t *testing.T) {
 	}
 	defer newNetwork.Remove(ctx)
 
-	nginx, err := GenericContainer(ctx, gcr)
+	c, err := GenericContainer(ctx, gcr)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer nginx.Terminate(ctx)
+	defer c.Terminate(ctx)
 
-	networks, err := nginx.Networks(ctx)
+	networks, err := c.Networks(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -101,7 +101,7 @@ func TestContainerAttachedToNewNetwork(t *testing.T) {
 		t.Errorf("Expected network name '%s'. Got '%s'.", networkName, network)
 	}
 
-	networkAliases, err := nginx.NetworkAliases(ctx)
+	networkAliases, err := c.NetworkAliases(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
