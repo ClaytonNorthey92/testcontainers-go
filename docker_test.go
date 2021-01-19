@@ -30,15 +30,24 @@ import (
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
+func decideImage(r *ContainerRequest) {
+	if runtime.GOOS == "windows" {
+		r.FromDockerfile = FromDockerfile{
+			Dockerfile: "echo.Dockerfile",
+			Context:    "./testresources",
+		}
+		r.ExposedPorts = "8080/tcp"
+	} else {
+		r.Image = "nginx"
+		r.ExposedPorts = "80/tcp"
+	}
+}
+
 func TestContainerAttachedToNewNetwork(t *testing.T) {
 	networkName := "new-network"
 	ctx := context.Background()
 	gcr := GenericContainerRequest{
 		ContainerRequest: ContainerRequest{
-			Image: "nginx",
-			ExposedPorts: []string{
-				"80/tcp",
-			},
 			Networks: []string{
 				networkName,
 			},
@@ -49,6 +58,8 @@ func TestContainerAttachedToNewNetwork(t *testing.T) {
 			},
 		},
 	}
+
+	decideImage(gcr.ContainerRequest)
 
 	newNetwork, err := GenericNetwork(ctx, GenericNetworkRequest{
 		NetworkRequest: NetworkRequest{
@@ -588,14 +599,16 @@ func TestContainerCreationWithName(t *testing.T) {
 
 	creationName := fmt.Sprintf("%s_%d", "test_container", time.Now().Unix())
 	expectedName := "/" + creationName // inspect adds '/' in the beginning
+	nginxPort := "80/tcp"
 	nginxC, err := GenericContainer(ctx, GenericContainerRequest{
 		ContainerRequest: ContainerRequest{
-			Image:           "golang:1.14",
-			Cmd:             []string{"echo", "hello"},
-			WaitingFor:      wait.ForLog("hello").WithStartupTimeout(5 * time.Second),
-			Name:            creationName,
-			SkipReaper:      true,
-			AlwaysPullImage: true,
+			Image: "nginx",
+			ExposedPorts: []string{
+				nginxPort,
+			},
+			WaitingFor: wait.ForListeningPort("80/tcp"),
+			Name:       creationName,
+			Networks:   []string{"bridge"},
 		},
 		Started: true,
 	})
@@ -623,8 +636,23 @@ func TestContainerCreationWithName(t *testing.T) {
 		t.Errorf("Expected networks 1. Got '%d'.", len(networks))
 	}
 	network := networks[0]
-	if network != "nat" {
-		t.Errorf("Expected network name '%s'. Got '%s'.", "nat", network)
+	if network != "bridge" {
+		t.Errorf("Expected network name '%s'. Got '%s'.", "bridge", network)
+	}
+	ip, err := nginxC.Host(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	port, err := nginxC.MappedPort(ctx, "80")
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp, err := http.Get(fmt.Sprintf("http://%s:%s", ip, port.Port()))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("Expected status code %d. Got %d.", http.StatusOK, resp.StatusCode)
 	}
 }
 

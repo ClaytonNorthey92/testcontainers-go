@@ -19,7 +19,7 @@ jobs:
     strategy:
       matrix:
         go-version: [1.14.x]
-        platform: [windows-latest]
+        platform: [ubuntu-latest, windows-latest]
     runs-on: ${{ matrix.platform }}
     steps:
 
@@ -32,8 +32,5 @@ jobs:
       - name: Check out code into the Go module directory
         uses: actions/checkout@v2
 
-      - name: Get nginx
-        run: docker pull golang:1.14
-
       - name: test it
-        run: go test -v -run=TestContainerCreationWithName ./...
+        run: go test -v -run=TestContainerAttachedToNewNetwork ./...
