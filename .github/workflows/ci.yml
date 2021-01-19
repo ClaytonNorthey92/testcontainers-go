@@ -36,5 +36,13 @@ jobs:
         if: ${{ matrix.platform == 'windows-latest' }}
         run: Get-Location
 
+      - name: Show folders in current directory
+        if: ${{ matrix.platform == 'windows-latest' }}
+        run: Get-ChildItem -Path .
+
+      - name: Show folders in testresources
+        if: ${{ matrix.platform == 'windows-latest' }}
+        run: Get-ChildItem -Path .\testresources
+
       - name: test it
         run: go test -v -run=TestContainerAttachedToNewNetwork ./...
