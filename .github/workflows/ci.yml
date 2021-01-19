@@ -34,7 +34,7 @@ jobs:
 
       - name: Where am I?
         if: ${{ matrix.platform == 'windows-latest' }}
-        run: Current-Location
+        run: Get-Location
 
       - name: test it
         run: go test -v -run=TestContainerAttachedToNewNetwork ./...
