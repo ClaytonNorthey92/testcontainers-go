@@ -34,7 +34,7 @@ jobs:
 
       - name: does this build on windows?
         if: ${{ matrix.platform == 'windows-latest' }}
-        run: docker build --context testresources --dockerfile echoserver.Dockerfile
+        run: docker build --dockerfile echoserver.Dockerfile .\testresources
 
       - name: test it
         run: go test -v -run=TestContainerAttachedToNewNetwork ./...
