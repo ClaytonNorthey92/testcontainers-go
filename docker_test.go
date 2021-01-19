@@ -32,6 +32,7 @@ import (
 )
 
 func decideImage(r *ContainerRequest) {
+	fmt.Println(runtime.GOOS)
 	if runtime.GOOS == "windows" {
 		r.FromDockerfile = FromDockerfile{
 			Dockerfile: "echo.Dockerfile",
@@ -39,6 +40,7 @@ func decideImage(r *ContainerRequest) {
 		}
 		r.ExposedPorts = []string{"8080/tcp"}
 		r.SkipReaper = true
+		r.NetworkMode = "nat"
 	} else {
 		r.Image = "nginx"
 		r.ExposedPorts = []string{"80/tcp"}
