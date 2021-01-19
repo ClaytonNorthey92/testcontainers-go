@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"math/rand"
 	"net/http"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
@@ -35,7 +36,7 @@ func decideImage(r *ContainerRequest) {
 	fmt.Println(runtime.GOOS)
 	if runtime.GOOS == "windows" {
 		r.FromDockerfile = FromDockerfile{
-			Dockerfile: ".\\testresources\\echoserver.Dockerfile",
+			Dockerfile: fmt.Sprintf("%s\\testresources\\echoserver.Dockerfile", os.Getwd()),
 			Context:    ".",
 		}
 		r.ExposedPorts = []string{"8080/tcp"}
