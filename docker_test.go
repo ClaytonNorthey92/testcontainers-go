@@ -37,11 +37,12 @@ func decideImage(r *ContainerRequest) {
 	if runtime.GOOS == "windows" {
 		p, err := os.Getwd()
 		if err != nil {
+			// this should never fail...if it does we have a big problem
 			panic(err)
 		}
 		r.FromDockerfile = FromDockerfile{
-			Dockerfile: fmt.Sprintf("%s\\testresources\\echoserver.Dockerfile", p),
-			Context:    ".",
+			Dockerfile: fmt.Sprintf("testresources/echoserver.Dockerfile", p),
+			Context:    p,
 		}
 		r.ExposedPorts = []string{"8080/tcp"}
 		r.SkipReaper = true
