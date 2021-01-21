@@ -41,7 +41,7 @@ func decideImage(r *ContainerRequest) {
 			panic(err)
 		}
 
-		p = p + "/testresources"
+		p = p + "\\testresources"
 		fmt.Println(p)
 
 		r.FromDockerfile = FromDockerfile{
