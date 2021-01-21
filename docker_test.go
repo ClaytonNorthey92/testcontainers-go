@@ -130,7 +130,7 @@ func TestContainerAttachedToNewNetwork(t *testing.T) {
 
 	networkAlias := networkAliases[networkName]
 
-	if diff := deep.Equal(networkAlias, []string{"alias1", "alias2", "alias3"}); dif != nil {
+	if diff := deep.Equal(networkAlias, []string{"alias1", "alias2", "alias3"}); diff != nil {
 		t.Error(diff)
 	}
 }

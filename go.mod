@@ -13,6 +13,7 @@ require (
 	github.com/docker/go-connections v0.4.0
 	github.com/go-redis/redis v6.15.9+incompatible
 	github.com/go-sql-driver/mysql v1.5.0
+	github.com/go-test/deep v1.0.7
 	github.com/gogo/protobuf v1.3.1 // indirect
 	github.com/google/uuid v1.1.2
 	github.com/gorilla/context v1.1.1 // indirect
