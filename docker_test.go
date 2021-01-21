@@ -45,8 +45,8 @@ func decideImage(r *ContainerRequest) {
 		fmt.Println(p)
 
 		r.FromDockerfile = FromDockerfile{
-			Dockerfile: "./echoserver.Dockerfile",
-			Context:    p + "/testresources",
+			Dockerfile: "testresources/echoserver.Dockerfile",
+			Context:    p,
 		}
 		r.ExposedPorts = []string{"8080/tcp"}
 		r.SkipReaper = true
