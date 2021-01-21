@@ -78,12 +78,12 @@ func TestContainerAttachedToNewNetwork(t *testing.T) {
 		NetworkRequest: NetworkRequest{
 			Name:           networkName,
 			CheckDuplicate: true,
-			Driver:         "nat",
 		},
 	}
 
 	if runtime.GOOS == "windows" {
 		genericNetworkRequest.SkipReaper = true
+		genericNetworkRequest.Driver = "nat"
 	}
 
 	newNetwork, err := GenericNetwork(ctx, genericNetworkRequest)
