@@ -29,6 +29,7 @@ import (
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
 	"github.com/go-redis/redis"
+	"github.com/go-test/deep"
 	"github.com/testcontainers/testcontainers-go/wait"
 )
 
@@ -126,17 +127,11 @@ func TestContainerAttachedToNewNetwork(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(networkAliases) != 1 {
-		t.Errorf("Expected network aliases for 1 network. Got '%d'.", len(networkAliases))
-	}
+
 	networkAlias := networkAliases[networkName]
-	if len(networkAlias) != 3 {
-		t.Errorf("Expected network aliases %d. Got '%d'.", 3, len(networkAlias))
-	}
-	if networkAlias[0] != "alias1" || networkAlias[1] != "alias2" || networkAlias[2] != "alias3" {
-		t.Errorf(
-			"Expected network aliases '%s', '%s' and '%s'. Got '%s', '%s' and '%s'.",
-			"alias1", "alias2", "alias3", networkAlias[0], networkAlias[1], networkAlias[2])
+
+	if diff := deep.Equal(networkAlias, []string{"alias1", "alias2", "alias3"}); dif != nil {
+		t.Error(diff)
 	}
 }
 
