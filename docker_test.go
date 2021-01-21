@@ -50,7 +50,6 @@ func decideImage(r *ContainerRequest) {
 		}
 		r.ExposedPorts = []string{"8080/tcp"}
 		r.SkipReaper = true
-		r.NetworkMode = "nat"
 	} else {
 		r.Image = "nginx"
 		r.ExposedPorts = []string{"80/tcp"}
@@ -79,6 +78,7 @@ func TestContainerAttachedToNewNetwork(t *testing.T) {
 		NetworkRequest: NetworkRequest{
 			Name:           networkName,
 			CheckDuplicate: true,
+			Driver:         "nat",
 		},
 	}
 
