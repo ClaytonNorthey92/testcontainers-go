@@ -139,10 +139,8 @@ func TestContainerWithHostNetworkOptions(t *testing.T) {
 	ctx := context.Background()
 	gcr := GenericContainerRequest{
 		ContainerRequest: ContainerRequest{
-			Image:       "nginx",
 			Privileged:  true,
 			SkipReaper:  true,
-			NetworkMode: "host",
 			ExposedPorts: []string{
 				"80/tcp",
 			},
@@ -150,6 +148,9 @@ func TestContainerWithHostNetworkOptions(t *testing.T) {
 		},
 		Started: true,
 	}
+
+	decideImage(&gcr.ContainerRequest)
+	gcr.ContainerRequest.NetworkMode = "host"
 
 	nginxC, err := GenericContainer(ctx, gcr)
 	if err != nil {
