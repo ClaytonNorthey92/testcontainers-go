@@ -41,7 +41,7 @@ func decideImage(r *ContainerRequest) {
 			panic(err)
 		}
 		r.FromDockerfile = FromDockerfile{
-			Dockerfile: fmt.Sprintf("testresources/echoserver.Dockerfile", p),
+			Dockerfile: "testresources/echoserver.Dockerfile",
 			Context:    p,
 		}
 		r.ExposedPorts = []string{"8080/tcp"}
