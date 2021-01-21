@@ -103,6 +103,17 @@ func TestContainerAttachedToNewNetwork(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
+	// filter networks to just the one we created there should only be 1
+	networksWithName := make([]string, 0)
+	for _, n := range networks {
+		if n == networkName {
+			networksWithName = append(networksWithName, n)
+		}
+	}
+
+	networks = networksWithName
+
 	if len(networks) != 1 {
 		t.Errorf("Expected networks 1. Got '%d'.", len(networks))
 	}
