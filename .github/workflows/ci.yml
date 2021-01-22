@@ -29,6 +29,10 @@ jobs:
           go-version: ${{ matrix.go-version }}
         id: go
 
+      - name: Get Image dependencies
+        run: |
+          docker pull postgres:latest
+
       - name: Get dependencies
         run: |
           go get -v -t -d ./...

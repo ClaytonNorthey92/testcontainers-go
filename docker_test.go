@@ -139,8 +139,8 @@ func TestContainerWithHostNetworkOptions(t *testing.T) {
 	ctx := context.Background()
 	gcr := GenericContainerRequest{
 		ContainerRequest: ContainerRequest{
-			Privileged:  true,
-			SkipReaper:  true,
+			Privileged: true,
+			SkipReaper: true,
 			ExposedPorts: []string{
 				"80/tcp",
 			},
@@ -1294,6 +1294,8 @@ func TestContainerNonExistentImage(t *testing.T) {
 	})
 
 	t.Run("the context cancellation is propagated to container creation", func(t *testing.T) {
+		// make sure you pull postgres:latest before running this test, using the AlwaysPullImage will
+		// cause an error with the context timeout which will cause this test to fail
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 		defer cancel()
 		_, err := GenericContainer(ctx, GenericContainerRequest{
@@ -1304,6 +1306,7 @@ func TestContainerNonExistentImage(t *testing.T) {
 			},
 			Started: true,
 		})
+
 		if !errors.Is(err, ctx.Err()) {
 			t.Fatalf("err should be a ctx cancelled error %v", err)
 		}
