@@ -51,6 +51,7 @@ func decideImage(r *ContainerRequest) {
 		}
 		r.ExposedPorts = []string{"8080/tcp"}
 		r.SkipReaper = true
+		r.Privileged = false
 	} else {
 		r.Image = "nginx"
 		r.ExposedPorts = []string{"80/tcp"}
@@ -152,19 +153,14 @@ func TestContainerWithHostNetworkOptions(t *testing.T) {
 	decideImage(&gcr.ContainerRequest)
 	gcr.ContainerRequest.NetworkMode = "host"
 
-	nginxC, err := GenericContainer(ctx, gcr)
+	c, err := GenericContainer(ctx, gcr)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	defer nginxC.Terminate(ctx)
+	defer c.Terminate(ctx)
 
-	//host, err := nginxC.Host(ctx)
-	//if err != nil {
-	//	t.Errorf("Expected host %s. Got '%d'.", host, err)
-	//}
-	//
-	endpoint, err := nginxC.Endpoint(ctx, "http")
+	endpoint, err := c.Endpoint(ctx, "http")
 	if err != nil {
 		t.Errorf("Expected server endpoint. Got '%v'.", err)
 	}
@@ -198,22 +194,24 @@ func TestContainerWithHostNetworkOptionsAndWaitStrategy(t *testing.T) {
 	ctx := context.Background()
 	gcr := GenericContainerRequest{
 		ContainerRequest: ContainerRequest{
-			Image:       "nginx",
-			SkipReaper:  true,
-			NetworkMode: "host",
-			WaitingFor:  wait.ForListeningPort("80/tcp"),
+			Image:      "nginx",
+			SkipReaper: true,
+			WaitingFor: wait.ForListeningPort("80/tcp"),
 		},
 		Started: true,
 	}
 
-	nginxC, err := GenericContainer(ctx, gcr)
+	decideImage(&gcr.ContainerRequest)
+	gcr.ContainerRequest.NetworkMode = "host"
+
+	c, err := GenericContainer(ctx, gcr)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	defer nginxC.Terminate(ctx)
+	defer c.Terminate(ctx)
 
-	host, err := nginxC.Host(ctx)
+	host, err := c.Host(ctx)
 	if err != nil {
 		t.Errorf("Expected host %s. Got '%d'.", host, err)
 	}
