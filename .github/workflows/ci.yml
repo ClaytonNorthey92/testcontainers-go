@@ -31,7 +31,7 @@ jobs:
 
       - name: Get Image dependencies
         run: |
-          docker pull postgres:latest
+          docker pull golang:latest
 
       - name: Get dependencies
         run: |

@@ -1300,7 +1300,7 @@ func TestContainerNonExistentImage(t *testing.T) {
 		defer cancel()
 		_, err := GenericContainer(ctx, GenericContainerRequest{
 			ContainerRequest: ContainerRequest{
-				Image:      "postgres:latest",
+				Image:      "golang:latest",
 				WaitingFor: wait.ForLog("log"),
 				SkipReaper: true,
 			},
