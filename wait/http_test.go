@@ -11,6 +11,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"runtime"
 	"testing"
 	"time"
 
@@ -41,7 +42,39 @@ func ExampleHTTPStrategy() {
 
 }
 
+func TestHTTPStrategyWaitUntilReadyAnyOS(t *testing.T) {
+	containerRequest := testcontainers.ContainerRequest{
+		FromDockerfile: testcontainers.FromDockerfile{
+			Context:    "../testresources",
+			Dockerfile: "echoserver.Dockerfile",
+		},
+		ExposedPorts: []string{"8080/tcp"},
+		WaitingFor: wait.NewHTTPStrategy("/").WithPort("8080/tcp").
+			WithStartupTimeout(10 * time.Second).
+			WithResponseMatcher(func(body io.Reader) bool {
+				data, err := ioutil.ReadAll(body)
+				if err != nil {
+					t.Error(err)
+				}
+
+				return bytes.Equal(data, []byte(""))
+			}).WithMethod(http.MethodGet),
+	}
+
+	_, err := testcontainers.GenericContainer(context.Background(),
+		testcontainers.GenericContainerRequest{
+			ContainerRequest: containerRequest, Started: true,
+		})
+
+	if err != nil {
+		t.Error(err)
+	}
+}
+
 func TestHTTPStrategyWaitUntilReady(t *testing.T) {
+	if runtime.GOOS != "linux" {
+		t.Skip()
+	}
 	workdir, err := os.Getwd()
 	if err != nil {
 		t.Error(err)
