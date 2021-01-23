@@ -295,19 +295,22 @@ func TestContainerWithHostNetworkAndPortEndpoint(t *testing.T) {
 
 func TestContainerReturnItsContainerID(t *testing.T) {
 	ctx := context.Background()
-	nginxA, err := GenericContainer(ctx, GenericContainerRequest{
+	c, err := GenericContainer(ctx, GenericContainerRequest{
 		ContainerRequest: ContainerRequest{
-			Image: "nginx",
+			FromDockerfile: FromDockerfile{
+				Context:    getContext(),
+				Dockerfile: "echoserver.Dockerfile",
+			},
 			ExposedPorts: []string{
-				"80/tcp",
+				"8080/tcp",
 			},
 		},
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer nginxA.Terminate(ctx)
-	if nginxA.GetContainerID() == "" {
+	defer c.Terminate(ctx)
+	if c.GetContainerID() == "" {
 		t.Errorf("expected a containerID but we got an empty string.")
 	}
 }
@@ -358,9 +361,12 @@ func TestContainerStartsWithTheReaper(t *testing.T) {
 	client.NegotiateAPIVersion(ctx)
 	_, err = GenericContainer(ctx, GenericContainerRequest{
 		ContainerRequest: ContainerRequest{
-			Image: "nginx",
+			FromDockerfile: FromDockerfile{
+				Context:    getContext(),
+				Dockerfile: "echoserver.Dockerfile",
+			},
 			ExposedPorts: []string{
-				"80/tcp",
+				"8080/tcp",
 			},
 		},
 		Started: true,
@@ -391,11 +397,14 @@ func TestContainerTerminationResetsState(t *testing.T) {
 		t.Fatal(err)
 	}
 	client.NegotiateAPIVersion(ctx)
-	nginxA, err := GenericContainer(ctx, GenericContainerRequest{
+	c, err := GenericContainer(ctx, GenericContainerRequest{
 		ContainerRequest: ContainerRequest{
-			Image: "nginx",
+			FromDockerfile: FromDockerfile{
+				Context:    getContext(),
+				Dockerfile: "echoserver.Dockerfile",
+			},
 			ExposedPorts: []string{
-				"80/tcp",
+				"8080/tcp",
 			},
 			SkipReaper: true,
 		},
@@ -405,14 +414,14 @@ func TestContainerTerminationResetsState(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err = nginxA.Terminate(ctx)
+	err = c.Terminate(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if nginxA.SessionID() != "00000000-0000-0000-0000-000000000000" {
+	if c.SessionID() != "00000000-0000-0000-0000-000000000000" {
 		t.Fatal("Internal state must be reset.")
 	}
-	ports, err := nginxA.Ports(ctx)
+	ports, err := c.Ports(ctx)
 	if err == nil || ports != nil {
 		t.Fatal("expected error from container inspect.")
 	}
@@ -425,11 +434,14 @@ func TestContainerTerminationWithReaper(t *testing.T) {
 		t.Fatal(err)
 	}
 	client.NegotiateAPIVersion(ctx)
-	nginxA, err := GenericContainer(ctx, GenericContainerRequest{
+	c, err := GenericContainer(ctx, GenericContainerRequest{
 		ContainerRequest: ContainerRequest{
-			Image: "nginx",
+			FromDockerfile: FromDockerfile{
+				Context:    getContext(),
+				Dockerfile: "echoserver.Dockerfile",
+			},
 			ExposedPorts: []string{
-				"80/tcp",
+				"8080/tcp",
 			},
 		},
 		Started: true,
@@ -437,7 +449,7 @@ func TestContainerTerminationWithReaper(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	containerID := nginxA.GetContainerID()
+	containerID := c.GetContainerID()
 	resp, err := client.ContainerInspect(ctx, containerID)
 	if err != nil {
 		t.Fatal(err)
@@ -445,7 +457,7 @@ func TestContainerTerminationWithReaper(t *testing.T) {
 	if resp.State.Running != true {
 		t.Fatal("The container shoud be in running state")
 	}
-	err = nginxA.Terminate(ctx)
+	err = c.Terminate(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -462,11 +474,14 @@ func TestContainerTerminationWithoutReaper(t *testing.T) {
 		t.Fatal(err)
 	}
 	client.NegotiateAPIVersion(ctx)
-	nginxA, err := GenericContainer(ctx, GenericContainerRequest{
+	c, err := GenericContainer(ctx, GenericContainerRequest{
 		ContainerRequest: ContainerRequest{
-			Image: "nginx",
+			FromDockerfile: FromDockerfile{
+				Context:    getContext(),
+				Dockerfile: "echoserver.Dockerfile",
+			},
 			ExposedPorts: []string{
-				"80/tcp",
+				"8080/tcp",
 			},
 			SkipReaper: true,
 		},
@@ -475,7 +490,7 @@ func TestContainerTerminationWithoutReaper(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	containerID := nginxA.GetContainerID()
+	containerID := c.GetContainerID()
 	resp, err := client.ContainerInspect(ctx, containerID)
 	if err != nil {
 		t.Fatal(err)
@@ -483,7 +498,7 @@ func TestContainerTerminationWithoutReaper(t *testing.T) {
 	if resp.State.Running != true {
 		t.Fatal("The container shoud be in running state")
 	}
-	err = nginxA.Terminate(ctx)
+	err = c.Terminate(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
