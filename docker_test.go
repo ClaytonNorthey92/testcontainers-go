@@ -20,10 +20,6 @@ import (
 
 	"github.com/docker/docker/api/types/volume"
 
-	"database/sql"
-	// Import mysql into the scope of this package (required)
-	_ "github.com/go-sql-driver/mysql"
-
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/client"
@@ -510,11 +506,14 @@ func TestContainerTerminationWithoutReaper(t *testing.T) {
 
 func TestTwoContainersExposingTheSamePort(t *testing.T) {
 	ctx := context.Background()
-	nginxA, err := GenericContainer(ctx, GenericContainerRequest{
+	firstContainer, err := GenericContainer(ctx, GenericContainerRequest{
 		ContainerRequest: ContainerRequest{
-			Image: "nginx",
+			FromDockerfile: FromDockerfile{
+				Context:    getContext(),
+				Dockerfile: "echoserver.Dockerfile",
+			},
 			ExposedPorts: []string{
-				"80/tcp",
+				"8080/tcp",
 			},
 		},
 		Started: true,
@@ -523,19 +522,22 @@ func TestTwoContainersExposingTheSamePort(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer func() {
-		err := nginxA.Terminate(ctx)
+		err := firstContainer.Terminate(ctx)
 		if err != nil {
 			t.Fatal(err)
 		}
 	}()
 
-	nginxB, err := GenericContainer(ctx, GenericContainerRequest{
+	secondContainer, err := GenericContainer(ctx, GenericContainerRequest{
 		ContainerRequest: ContainerRequest{
-			Image: "nginx",
-			ExposedPorts: []string{
-				"80/tcp",
+			FromDockerfile: FromDockerfile{
+				Context:    getContext(),
+				Dockerfile: "echoserver.Dockerfile",
 			},
-			WaitingFor: wait.ForListeningPort("80/tcp"),
+			ExposedPorts: []string{
+				"8080/tcp",
+			},
+			WaitingFor: wait.ForListeningPort("8080/tcp"),
 		},
 		Started: true,
 	})
@@ -543,17 +545,17 @@ func TestTwoContainersExposingTheSamePort(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer func() {
-		err := nginxB.Terminate(ctx)
+		err := secondContainer.Terminate(ctx)
 		if err != nil {
 			t.Fatal(err)
 		}
 	}()
 
-	ipA, err := nginxA.Host(ctx)
+	ipA, err := firstContainer.Host(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
-	portA, err := nginxA.MappedPort(ctx, "80/tcp")
+	portA, err := firstContainer.MappedPort(ctx, "8080/tcp")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -565,11 +567,11 @@ func TestTwoContainersExposingTheSamePort(t *testing.T) {
 		t.Errorf("Expected status code %d. Got %d.", http.StatusOK, resp.StatusCode)
 	}
 
-	ipB, err := nginxB.Host(ctx)
+	ipB, err := secondContainer.Host(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
-	portB, err := nginxB.MappedPort(ctx, "80")
+	portB, err := secondContainer.MappedPort(ctx, "8080")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -586,14 +588,14 @@ func TestTwoContainersExposingTheSamePort(t *testing.T) {
 func TestContainerCreation(t *testing.T) {
 	ctx := context.Background()
 
-	nginxPort := "80/tcp"
-	nginxC, err := GenericContainer(ctx, GenericContainerRequest{
+	containerPort := "8080/tcp"
+	c, err := GenericContainer(ctx, GenericContainerRequest{
 		ContainerRequest: ContainerRequest{
-			Image: "nginx",
+			Image: "echoserver:latest",
 			ExposedPorts: []string{
-				nginxPort,
+				containerPort,
 			},
-			WaitingFor: wait.ForListeningPort("80/tcp"),
+			WaitingFor: wait.ForListeningPort(nat.Port(containerPort)),
 		},
 		Started: true,
 	})
@@ -601,16 +603,16 @@ func TestContainerCreation(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer func() {
-		err := nginxC.Terminate(ctx)
+		err := c.Terminate(ctx)
 		if err != nil {
 			t.Fatal(err)
 		}
 	}()
-	ip, err := nginxC.Host(ctx)
+	ip, err := c.Host(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
-	port, err := nginxC.MappedPort(ctx, "80")
+	port, err := c.MappedPort(ctx, "8080")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -621,14 +623,14 @@ func TestContainerCreation(t *testing.T) {
 	if resp.StatusCode != http.StatusOK {
 		t.Errorf("Expected status code %d. Got %d.", http.StatusOK, resp.StatusCode)
 	}
-	networkIP, err := nginxC.ContainerIP(ctx)
+	networkIP, err := c.ContainerIP(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if len(networkIP) == 0 {
 		t.Errorf("Expected an IP address, got %v", networkIP)
 	}
-	networkAliases, err := nginxC.NetworkAliases(ctx)
+	networkAliases, err := c.NetworkAliases(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -646,16 +648,15 @@ func TestContainerCreationWithName(t *testing.T) {
 
 	creationName := fmt.Sprintf("%s_%d", "test_container", time.Now().Unix())
 	expectedName := "/" + creationName // inspect adds '/' in the beginning
-	nginxPort := "80/tcp"
-	nginxC, err := GenericContainer(ctx, GenericContainerRequest{
+	containerPort := "8080/tcp"
+	c, err := GenericContainer(ctx, GenericContainerRequest{
 		ContainerRequest: ContainerRequest{
-			Image: "nginx",
+			Image: "echoserver:latest",
 			ExposedPorts: []string{
-				nginxPort,
+				containerPort,
 			},
-			WaitingFor: wait.ForListeningPort("80/tcp"),
+			WaitingFor: wait.ForListeningPort("8080/tcp"),
 			Name:       creationName,
-			Networks:   []string{"bridge"},
 		},
 		Started: true,
 	})
@@ -663,19 +664,19 @@ func TestContainerCreationWithName(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer func() {
-		err := nginxC.Terminate(ctx)
+		err := c.Terminate(ctx)
 		if err != nil {
 			t.Fatal(err)
 		}
 	}()
-	name, err := nginxC.Name(ctx)
+	name, err := c.Name(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if name != expectedName {
 		t.Errorf("Expected container name '%s'. Got '%s'.", expectedName, name)
 	}
-	networks, err := nginxC.Networks(ctx)
+	networks, err := c.Networks(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -683,14 +684,15 @@ func TestContainerCreationWithName(t *testing.T) {
 		t.Errorf("Expected networks 1. Got '%d'.", len(networks))
 	}
 	network := networks[0]
-	if network != "bridge" {
+	driver := getNetworkModeForOS()
+	if network != driver {
 		t.Errorf("Expected network name '%s'. Got '%s'.", "bridge", network)
 	}
-	ip, err := nginxC.Host(ctx)
+	ip, err := c.Host(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
-	port, err := nginxC.MappedPort(ctx, "80")
+	port, err := c.MappedPort(ctx, "8080")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -704,6 +706,10 @@ func TestContainerCreationWithName(t *testing.T) {
 }
 
 func TestContainerCreationAndWaitForListeningPortLongEnough(t *testing.T) {
+	// not 100% sure if the image used here will run on windows
+	if runtime.GOOS == "windows" {
+		t.Skip()
+	}
 	ctx := context.Background()
 
 	nginxPort := "80/tcp"
@@ -831,12 +837,7 @@ func TestContainerCreationTimesOutWithHttp(t *testing.T) {
 func TestContainerCreationWaitsForLogContextTimeout(t *testing.T) {
 	ctx := context.Background()
 	req := ContainerRequest{
-		Image:        "mysql:latest",
-		ExposedPorts: []string{"3306/tcp", "33060/tcp"},
-		Env: map[string]string{
-			"MYSQL_ROOT_PASSWORD": "password",
-			"MYSQL_DATABASE":      "database",
-		},
+		Image:      "echoserver:latest",
 		WaitingFor: wait.ForLog("test context timeout").WithStartupTimeout(1 * time.Second),
 	}
 	_, err := GenericContainer(ctx, GenericContainerRequest{
@@ -852,45 +853,16 @@ func TestContainerCreationWaitsForLogContextTimeout(t *testing.T) {
 func TestContainerCreationWaitsForLog(t *testing.T) {
 	ctx := context.Background()
 	req := ContainerRequest{
-		Image:        "mysql:latest",
-		ExposedPorts: []string{"3306/tcp", "33060/tcp"},
-		Env: map[string]string{
-			"MYSQL_ROOT_PASSWORD": "password",
-			"MYSQL_DATABASE":      "database",
-		},
-		WaitingFor: wait.ForLog("port: 3306  MySQL Community Server - GPL"),
+		Image:      "echoserver:latest",
+		WaitingFor: wait.ForLog("ready"),
 	}
-	mysqlC, _ := GenericContainer(ctx, GenericContainerRequest{
+	_, err := GenericContainer(ctx, GenericContainerRequest{
 		ContainerRequest: req,
 		Started:          true,
 	})
-	defer func() {
-		t.Log("terminating container")
-		err := mysqlC.Terminate(ctx)
-		if err != nil {
-			t.Fatal(err)
-		}
-	}()
 
-	host, _ := mysqlC.Host(ctx)
-	p, _ := mysqlC.MappedPort(ctx, "3306/tcp")
-	port := p.Int()
-	connectionString := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?tls=skip-verify",
-		"root", "password", host, port, "database")
-
-	db, err := sql.Open("mysql", connectionString)
-	defer db.Close()
-
-	if err = db.Ping(); err != nil {
-		t.Errorf("error pinging db: %+v\n", err)
-	}
-	_, err = db.Exec("CREATE TABLE IF NOT EXISTS a_table ( \n" +
-		" `col_1` VARCHAR(128) NOT NULL, \n" +
-		" `col_2` VARCHAR(128) NOT NULL, \n" +
-		" PRIMARY KEY (`col_1`, `col_2`) \n" +
-		")")
 	if err != nil {
-		t.Errorf("error creating table: %+v\n", err)
+		t.Error(err)
 	}
 }
 
@@ -953,15 +925,11 @@ func Test_BuildContainerFromDockerfile(t *testing.T) {
 func TestContainerCreationWaitsForLogAndPortContextTimeout(t *testing.T) {
 	ctx := context.Background()
 	req := ContainerRequest{
-		Image:        "mysql:latest",
-		ExposedPorts: []string{"3306/tcp", "33060/tcp"},
-		Env: map[string]string{
-			"MYSQL_ROOT_PASSWORD": "password",
-			"MYSQL_DATABASE":      "database",
-		},
+		Image:        "echoserver:latest",
+		ExposedPorts: []string{"8080/tcp"},
 		WaitingFor: wait.ForAll(
-			wait.ForLog("I love testcontainers-go"),
-			wait.ForListeningPort("3306/tcp"),
+			wait.ForLog("this log shall not show").WithStartupTimeout(1*time.Second),
+			wait.ForListeningPort("8080/tcp"),
 		),
 	}
 	_, err := GenericContainer(ctx, GenericContainerRequest{
@@ -978,20 +946,20 @@ func TestContainerCreationWaitsForLogAndPortContextTimeout(t *testing.T) {
 func TestContainerCreationWaitingForHostPort(t *testing.T) {
 	ctx := context.Background()
 	req := ContainerRequest{
-		Image:        "nginx:1.17.6",
-		ExposedPorts: []string{"80/tcp"},
-		WaitingFor:   wait.ForListeningPort("80/tcp"),
+		Image:        "echoserver:latest",
+		ExposedPorts: []string{"8080/tcp"},
+		WaitingFor:   wait.ForListeningPort("8080/tcp"),
 	}
-	nginx, err := GenericContainer(ctx, GenericContainerRequest{
+	c, err := GenericContainer(ctx, GenericContainerRequest{
 		ContainerRequest: req,
 		Started:          true,
 	})
 	defer func() {
-		err := nginx.Terminate(ctx)
+		err := c.Terminate(ctx)
 		if err != nil {
 			t.Fatal(err)
 		}
-		t.Log("terminated nginx container")
+		t.Log("terminated container")
 	}()
 	if err != nil {
 		t.Fatal(err)
@@ -999,6 +967,10 @@ func TestContainerCreationWaitingForHostPort(t *testing.T) {
 }
 
 func TestContainerCreationWaitingForHostPortWithoutBashThrowsAnError(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		// Windows does not have bash
+		t.Skip()
+	}
 	ctx := context.Background()
 	req := ContainerRequest{
 		Image:        "nginx:1.17.6-alpine",
@@ -1024,19 +996,15 @@ func TestContainerCreationWaitingForHostPortWithoutBashThrowsAnError(t *testing.
 func TestContainerCreationWaitsForLogAndPort(t *testing.T) {
 	ctx := context.Background()
 	req := ContainerRequest{
-		Image:        "mysql:latest",
-		ExposedPorts: []string{"3306/tcp", "33060/tcp"},
-		Env: map[string]string{
-			"MYSQL_ROOT_PASSWORD": "password",
-			"MYSQL_DATABASE":      "database",
-		},
+		Image:        "echoserver:latest",
+		ExposedPorts: []string{"8080/tcp"},
 		WaitingFor: wait.ForAll(
-			wait.ForLog("port: 3306  MySQL Community Server - GPL"),
-			wait.ForListeningPort("3306/tcp"),
+			wait.ForLog("ready"),
+			wait.ForListeningPort("8080/tcp"),
 		),
 	}
 
-	mysqlC, err := GenericContainer(ctx, GenericContainerRequest{
+	c, err := GenericContainer(ctx, GenericContainerRequest{
 		ContainerRequest: req,
 		Started:          true,
 	})
@@ -1047,29 +1015,11 @@ func TestContainerCreationWaitsForLogAndPort(t *testing.T) {
 
 	defer func() {
 		t.Log("terminating container")
-		err := mysqlC.Terminate(ctx)
+		err := c.Terminate(ctx)
 		if err != nil {
 			t.Fatal(err)
 		}
 	}()
-
-	host, _ := mysqlC.Host(ctx)
-	p, _ := mysqlC.MappedPort(ctx, "3306/tcp")
-	port := p.Int()
-	connectionString := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?tls=skip-verify",
-		"root", "password", host, port, "database")
-
-	db, err := sql.Open("mysql", connectionString)
-
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	defer db.Close()
-
-	if err = db.Ping(); err != nil {
-		t.Errorf("error pinging db: %+v\n", err)
-	}
 
 }
 
@@ -1083,7 +1033,7 @@ func TestCMD(t *testing.T) {
 	ctx := context.Background()
 
 	req := ContainerRequest{
-		Image: "alpine",
+		Image: "echoserver:latest",
 		WaitingFor: wait.ForAll(
 			wait.ForLog("command override!"),
 		),
@@ -1113,7 +1063,7 @@ func TestEntrypoint(t *testing.T) {
 	ctx := context.Background()
 
 	req := ContainerRequest{
-		Image: "alpine",
+		Image: "echoserver:latest",
 		WaitingFor: wait.ForAll(
 			wait.ForLog("entrypoint override!"),
 		),
@@ -1226,7 +1176,7 @@ func TestContainerCreationWithBindAndVolume(t *testing.T) {
 	// Create the container that writes into the mounted volume.
 	bashC, err := GenericContainer(ctx, GenericContainerRequest{
 		ContainerRequest: ContainerRequest{
-			Image:        "bash",
+			Image:        "echoserver:latest",
 			BindMounts:   map[string]string{absPath: "/hello.sh"},
 			VolumeMounts: map[string]string{volumeName: "/data"},
 			Cmd:          []string{"bash", "/hello.sh"},
@@ -1250,7 +1200,7 @@ func TestContainerCreationWithBindAndVolume(t *testing.T) {
 func TestContainerWithTmpFs(t *testing.T) {
 	ctx := context.Background()
 	req := ContainerRequest{
-		Image: "busybox",
+		Image: "echoserver:latest",
 		Cmd:   []string{"sleep", "10"},
 		Tmpfs: map[string]string{"/testtmpfs": "rw"},
 	}
@@ -1336,7 +1286,7 @@ func TestContainerWithCustomHostname(t *testing.T) {
 	hostname := fmt.Sprintf("my-nginx-%s-%d", t.Name(), rand.Int())
 	req := ContainerRequest{
 		Name:     name,
-		Image:    "nginx",
+		Image:    "echoserver:latest",
 		Hostname: hostname,
 	}
 	container, err := GenericContainer(ctx, GenericContainerRequest{
@@ -1382,24 +1332,24 @@ func readHostname(t *testing.T, containerId string) string {
 func TestDockerContainerCopyFileToContainer(t *testing.T) {
 	ctx := context.Background()
 
-	nginxC, err := GenericContainer(ctx, GenericContainerRequest{
+	c, err := GenericContainer(ctx, GenericContainerRequest{
 		ContainerRequest: ContainerRequest{
-			Image:        "nginx:1.17.6",
-			ExposedPorts: []string{"80/tcp"},
-			WaitingFor:   wait.ForListeningPort("80/tcp"),
+			Image:        "echoserver:latest",
+			ExposedPorts: []string{"8080/tcp"},
+			WaitingFor:   wait.ForListeningPort("8080/tcp"),
 		},
 		Started: true,
 	})
-	defer nginxC.Terminate(ctx)
+	defer c.Terminate(ctx)
 
 	copiedFileName := "hello_copy.sh"
-	nginxC.CopyFileToContainer(ctx, "./testresources/hello.sh", "/"+copiedFileName, 700)
-	c, err := nginxC.Exec(ctx, []string{"bash", copiedFileName})
+	c.CopyFileToContainer(ctx, "./testresources/hello.sh", "/"+copiedFileName, 700)
+	co, err := c.Exec(ctx, []string{"bash", copiedFileName})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if c != 0 {
-		t.Fatalf("File %s should exist, expected return code 0, got %v", copiedFileName, c)
+	if co != 0 {
+		t.Fatalf("File %s should exist, expected return code 0, got %v", copiedFileName, co)
 	}
 }
 
@@ -1422,28 +1372,28 @@ func TestContainerWithReaperNetwork(t *testing.T) {
 	}
 
 	req := ContainerRequest{
-		Image:        "nginx",
-		ExposedPorts: []string{"80/tcp"},
+		Image:        "echoserver:latest",
+		ExposedPorts: []string{"8080/tcp"},
 		WaitingFor: wait.ForAll(
-			wait.ForListeningPort("80/tcp"),
-			wait.ForLog("Configuration complete; ready for start up"),
+			wait.ForListeningPort("8080/tcp"),
+			wait.ForLog("ready"),
 		),
 		Networks: networks,
 	}
 
-	nginxC, err := GenericContainer(ctx, GenericContainerRequest{
+	c, err := GenericContainer(ctx, GenericContainerRequest{
 		ContainerRequest: req,
 		Started:          true,
 	})
 
 	defer func() {
 		t.Log("terminating container")
-		err := nginxC.Terminate(ctx)
+		err := c.Terminate(ctx)
 		assert.Nil(t, err)
 	}()
 
 	assert.Nil(t, err)
-	containerId := nginxC.GetContainerID()
+	containerId := c.GetContainerID()
 
 	cli, err := client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
 	assert.Nil(t, err)

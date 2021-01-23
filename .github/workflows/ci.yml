@@ -33,6 +33,12 @@ jobs:
         run: |
           docker pull golang:latest
 
+      # there are some tests where we explicitly don't want to create an
+      # image in code itself, so we have an image ready-to-go here
+      - name: Build test images
+        run: |
+          docker build -f testresources/echoserver.Dockerfile -t echoserver:latest ./testresources
+
       - name: Get dependencies
         run: |
           go get -v -t -d ./...
