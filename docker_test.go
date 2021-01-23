@@ -8,13 +8,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"math/rand"
 	"net/http"
+	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
-	"runtime"
-	"os"
 
 	"github.com/docker/docker/errdefs"
 
@@ -29,8 +29,8 @@ import (
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
 	"github.com/go-redis/redis"
-	"github.com/testcontainers/testcontainers-go/wait"
 	"github.com/go-test/deep"
+	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 func getWindowsPath() string {
@@ -65,7 +65,7 @@ func TestContainerAttachedToNewNetwork(t *testing.T) {
 	gcr := GenericContainerRequest{
 		ContainerRequest: ContainerRequest{
 			FromDockerfile: FromDockerfile{
-				Context: getContext(),
+				Context:    getContext(),
 				Dockerfile: "echoserver.Dockerfile",
 			},
 			ExposedPorts: []string{
@@ -86,8 +86,8 @@ func TestContainerAttachedToNewNetwork(t *testing.T) {
 		NetworkRequest: NetworkRequest{
 			Name:           networkName,
 			CheckDuplicate: true,
-			SkipReaper: true,
-			Driver: getNetworkModeForOS(),
+			SkipReaper:     true,
+			Driver:         getNetworkModeForOS(),
 		},
 	})
 
@@ -135,16 +135,13 @@ func TestContainerWithHostNetworkOptions(t *testing.T) {
 	gcr := GenericContainerRequest{
 		ContainerRequest: ContainerRequest{
 			FromDockerfile: FromDockerfile{
-				Context: getContext(),
+				Context:    getContext(),
 				Dockerfile: "echoserver.Dockerfile",
 			},
-			Privileged: true,
+			Privileged:  true,
 			SkipReaper:  true,
 			NetworkMode: "host",
-			ExposedPorts: []string{
-				"8080/tcp",
-			},
-			WaitingFor: wait.ForListeningPort("8080/tcp"),
+			WaitingFor:  wait.ForListeningPort("8080/tcp"),
 		},
 		Started: true,
 	}
@@ -165,7 +162,8 @@ func TestContainerWithHostNetworkOptions(t *testing.T) {
 		t.Errorf("Expected server endpoint. Got '%v'.", err)
 	}
 
-	_, err = http.Get(endpoint)
+	// need to string format here, since in host mode
+	_, err = http.Get(fmt.Sprintf("%s:8080", endpoint))
 	if err != nil {
 		t.Errorf("Expected OK response. Got '%d'.", err)
 	}
