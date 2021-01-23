@@ -1198,6 +1198,10 @@ func TestContainerCreationWithBindAndVolume(t *testing.T) {
 }
 
 func TestContainerWithTmpFs(t *testing.T) {
+	// according to docker documentation, tmpfs is only an option on Linux
+	if runtime.GOOS != "linux" {
+		t.Skip()
+	}
 	ctx := context.Background()
 	req := ContainerRequest{
 		Image: "echoserver:latest",
