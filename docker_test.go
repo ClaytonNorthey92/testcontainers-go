@@ -1348,7 +1348,7 @@ func TestDockerContainerCopyFileToContainer(t *testing.T) {
 
 	copiedFileName := "hello_copy.sh"
 	c.CopyFileToContainer(ctx, "./testresources/hello.sh", "/"+copiedFileName, 700)
-	co, err := c.Exec(ctx, []string{"bash", copiedFileName})
+	co, err := c.Exec(ctx, []string{"bash", "/"+copiedFileName})
 	if err != nil {
 		t.Fatal(err)
 	}
