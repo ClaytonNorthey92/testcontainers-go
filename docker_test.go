@@ -173,7 +173,10 @@ func TestContainerWithNetworkModeAndNetworkTogether(t *testing.T) {
 	ctx := context.Background()
 	gcr := GenericContainerRequest{
 		ContainerRequest: ContainerRequest{
-			Image:       "nginx",
+			FromDockerfile: FromDockerfile{
+				Context:    getContext(),
+				Dockerfile: "echoserver.Dockerfile",
+			},
 			SkipReaper:  true,
 			NetworkMode: "host",
 			Networks:    []string{"new-network"},
@@ -189,89 +192,96 @@ func TestContainerWithNetworkModeAndNetworkTogether(t *testing.T) {
 }
 
 func TestContainerWithHostNetworkOptionsAndWaitStrategy(t *testing.T) {
-	t.Skip()
 	ctx := context.Background()
 	gcr := GenericContainerRequest{
 		ContainerRequest: ContainerRequest{
-			Image:       "nginx",
+			FromDockerfile: FromDockerfile{
+				Context:    getContext(),
+				Dockerfile: "echoserver.Dockerfile",
+			},
 			SkipReaper:  true,
 			NetworkMode: "host",
-			WaitingFor:  wait.ForListeningPort("80/tcp"),
+			WaitingFor:  wait.ForListeningPort("8080/tcp"),
 		},
 		Started: true,
 	}
 
-	nginxC, err := GenericContainer(ctx, gcr)
+	c, err := GenericContainer(ctx, gcr)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	defer nginxC.Terminate(ctx)
+	defer c.Terminate(ctx)
 
-	host, err := nginxC.Host(ctx)
+	host, err := c.Host(ctx)
 	if err != nil {
 		t.Errorf("Expected host %s. Got '%d'.", host, err)
 	}
 
-	_, err = http.Get("http://" + host + ":80")
+	_, err = http.Get("http://" + host + ":8080")
 	if err != nil {
 		t.Errorf("Expected OK response. Got '%d'.", err)
 	}
 }
 
 func TestContainerWithHostNetworkAndEndpoint(t *testing.T) {
-	nginxPort := "80/tcp"
 	ctx := context.Background()
 	gcr := GenericContainerRequest{
 		ContainerRequest: ContainerRequest{
-			Image:       "nginx",
+			FromDockerfile: FromDockerfile{
+				Context:    getContext(),
+				Dockerfile: "echoserver.Dockerfile",
+			},
 			SkipReaper:  true,
 			NetworkMode: "host",
-			WaitingFor:  wait.ForListeningPort(nat.Port(nginxPort)),
+			WaitingFor:  wait.ForListeningPort("8080/tcp"),
 		},
 		Started: true,
 	}
 
-	nginxC, err := GenericContainer(ctx, gcr)
+	c, err := GenericContainer(ctx, gcr)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	defer nginxC.Terminate(ctx)
+	defer c.Terminate(ctx)
 
-	hostN, err := nginxC.Endpoint(ctx, "")
+	hostN, err := c.Endpoint(ctx, "")
 	if err != nil {
 		t.Errorf("Expected host %s. Got '%d'.", hostN, err)
 	}
 	t.Log(hostN)
 
-	_, err = http.Get("http://" + hostN)
+	_, err = http.Get(fmt.Sprintf("http://%s:8080", hostN))
 	if err != nil {
 		t.Errorf("Expected OK response. Got '%d'.", err)
 	}
 }
 
 func TestContainerWithHostNetworkAndPortEndpoint(t *testing.T) {
-	nginxPort := "80/tcp"
+	containerPort := "8080/tcp"
 	ctx := context.Background()
 	gcr := GenericContainerRequest{
 		ContainerRequest: ContainerRequest{
-			Image:       "nginx",
+			FromDockerfile: FromDockerfile{
+				Context:    getContext(),
+				Dockerfile: "echoserver.Dockerfile",
+			},
 			SkipReaper:  true,
 			NetworkMode: "host",
-			WaitingFor:  wait.ForListeningPort(nat.Port(nginxPort)),
+			WaitingFor:  wait.ForListeningPort(nat.Port(containerPort)),
 		},
 		Started: true,
 	}
 
-	nginxC, err := GenericContainer(ctx, gcr)
+	c, err := GenericContainer(ctx, gcr)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	defer nginxC.Terminate(ctx)
+	defer c.Terminate(ctx)
 
-	origin, err := nginxC.PortEndpoint(ctx, nat.Port(nginxPort), "http")
+	origin, err := c.PortEndpoint(ctx, nat.Port(containerPort), "http")
 	if err != nil {
 		t.Errorf("Expected host %s. Got '%d'.", origin, err)
 	}
