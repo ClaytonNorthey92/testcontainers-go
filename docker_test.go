@@ -1204,7 +1204,7 @@ func TestContainerWithTmpFs(t *testing.T) {
 	}
 	ctx := context.Background()
 	req := ContainerRequest{
-		Image: "echoserver:latest",
+		Image: "busybox",
 		Cmd:   []string{"sleep", "10"},
 		Tmpfs: map[string]string{"/testtmpfs": "rw"},
 	}
