@@ -20,12 +20,19 @@ func echoHandler(destination *os.File) http.HandlerFunc {
 	}
 }
 
+func statusHandler() http.HandlerFunc {
+	return func(rw http.ResponseWriter, req *http.Request) {
+		rw.WriteHeader(http.StatusOK)
+	}
+}
+
 // a simple server that will echo whatever is in the "echo" parameter to stdout
 // in the /stdout endpoint or to stderr in the /stderr endpoint
 func main() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/stdout", echoHandler(os.Stdout))
 	mux.HandleFunc("/stderr", echoHandler(os.Stderr))
+	mux.HandleFunc("/", statusHandler())
 
 	ln, err := net.Listen("tcp", ":8080")
 	if err != nil {

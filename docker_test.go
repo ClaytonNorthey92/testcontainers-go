@@ -8,13 +8,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"math/rand"
 	"net/http"
-	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"testing"
 	"time"
+	"runtime"
+	"os"
 
 	"github.com/docker/docker/errdefs"
 
@@ -29,33 +29,34 @@ import (
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
 	"github.com/go-redis/redis"
-	"github.com/go-test/deep"
 	"github.com/testcontainers/testcontainers-go/wait"
+	"github.com/go-test/deep"
 )
 
-func decideImage(r *ContainerRequest) {
-	fmt.Println(runtime.GOOS)
-	if runtime.GOOS == "windows" {
-		p, err := os.Getwd()
-		if err != nil {
-			// this should never fail...if it does we have a big problem
-			panic(err)
-		}
-
-		p = p + "\\testresources"
-		fmt.Println(p)
-
-		r.FromDockerfile = FromDockerfile{
-			Dockerfile: "echoserver.Dockerfile",
-			Context:    p,
-		}
-		r.ExposedPorts = []string{"8080/tcp"}
-		r.SkipReaper = true
-		r.Privileged = false
-	} else {
-		r.Image = "nginx"
-		r.ExposedPorts = []string{"80/tcp"}
+func getWindowsPath() string {
+	p, err := os.Getwd()
+	if err != nil {
+		// this should never fail...if it does we have a big problem
+		panic(err)
 	}
+
+	return p + "\\testresources"
+}
+
+func getContext() string {
+	if runtime.GOOS == "windows" {
+		return getWindowsPath()
+	}
+
+	return "./testresources"
+}
+
+func getNetworkModeForOS() string {
+	if runtime.GOOS == "windows" {
+		return "nat"
+	}
+
+	return "bridge"
 }
 
 func TestContainerAttachedToNewNetwork(t *testing.T) {
@@ -63,6 +64,13 @@ func TestContainerAttachedToNewNetwork(t *testing.T) {
 	ctx := context.Background()
 	gcr := GenericContainerRequest{
 		ContainerRequest: ContainerRequest{
+			FromDockerfile: FromDockerfile{
+				Context: getContext(),
+				Dockerfile: "echoserver.Dockerfile",
+			},
+			ExposedPorts: []string{
+				"8080/tcp",
+			},
 			Networks: []string{
 				networkName,
 			},
@@ -74,21 +82,14 @@ func TestContainerAttachedToNewNetwork(t *testing.T) {
 		},
 	}
 
-	decideImage(&gcr.ContainerRequest)
-
-	genericNetworkRequest := GenericNetworkRequest{
+	newNetwork, err := GenericNetwork(ctx, GenericNetworkRequest{
 		NetworkRequest: NetworkRequest{
 			Name:           networkName,
 			CheckDuplicate: true,
+			SkipReaper: true,
+			Driver: getNetworkModeForOS(),
 		},
-	}
-
-	if runtime.GOOS == "windows" {
-		genericNetworkRequest.SkipReaper = true
-		genericNetworkRequest.Driver = "nat"
-	}
-
-	newNetwork, err := GenericNetwork(ctx, genericNetworkRequest)
+	})
 
 	if err != nil {
 		t.Fatal(err)
@@ -106,22 +107,15 @@ func TestContainerAttachedToNewNetwork(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// filter networks to just the one we created there should only be 1
-	networksWithName := make([]string, 0)
-	for _, n := range networks {
-		if n == networkName {
-			networksWithName = append(networksWithName, n)
+	found := false
+	for _, v := range networks {
+		if v == networkName {
+			found = true
 		}
 	}
 
-	networks = networksWithName
-
-	if len(networks) != 1 {
-		t.Errorf("Expected networks 1. Got '%d'.", len(networks))
-	}
-	network := networks[0]
-	if network != networkName {
-		t.Errorf("Expected network name '%s'. Got '%s'.", networkName, network)
+	if found == false {
+		t.Errorf("could not find network that was created")
 	}
 
 	networkAliases, err := c.NetworkAliases(ctx)
@@ -140,18 +134,24 @@ func TestContainerWithHostNetworkOptions(t *testing.T) {
 	ctx := context.Background()
 	gcr := GenericContainerRequest{
 		ContainerRequest: ContainerRequest{
-			Privileged: true,
-			SkipReaper: true,
-			ExposedPorts: []string{
-				"80/tcp",
+			FromDockerfile: FromDockerfile{
+				Context: getContext(),
+				Dockerfile: "echoserver.Dockerfile",
 			},
-			WaitingFor: wait.ForListeningPort("80/tcp"),
+			Privileged: true,
+			SkipReaper:  true,
+			NetworkMode: "host",
+			ExposedPorts: []string{
+				"8080/tcp",
+			},
+			WaitingFor: wait.ForListeningPort("8080/tcp"),
 		},
 		Started: true,
 	}
 
-	decideImage(&gcr.ContainerRequest)
-	gcr.ContainerRequest.NetworkMode = "host"
+	if runtime.GOOS == "windows" {
+		gcr.ContainerRequest.SkipReaper = true
+	}
 
 	c, err := GenericContainer(ctx, gcr)
 	if err != nil {
@@ -191,27 +191,26 @@ func TestContainerWithNetworkModeAndNetworkTogether(t *testing.T) {
 }
 
 func TestContainerWithHostNetworkOptionsAndWaitStrategy(t *testing.T) {
+	t.Skip()
 	ctx := context.Background()
 	gcr := GenericContainerRequest{
 		ContainerRequest: ContainerRequest{
-			Image:      "nginx",
-			SkipReaper: true,
-			WaitingFor: wait.ForListeningPort("80/tcp"),
+			Image:       "nginx",
+			SkipReaper:  true,
+			NetworkMode: "host",
+			WaitingFor:  wait.ForListeningPort("80/tcp"),
 		},
 		Started: true,
 	}
 
-	decideImage(&gcr.ContainerRequest)
-	gcr.ContainerRequest.NetworkMode = "host"
-
-	c, err := GenericContainer(ctx, gcr)
+	nginxC, err := GenericContainer(ctx, gcr)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	defer c.Terminate(ctx)
+	defer nginxC.Terminate(ctx)
 
-	host, err := c.Host(ctx)
+	host, err := nginxC.Host(ctx)
 	if err != nil {
 		t.Errorf("Expected host %s. Got '%d'.", host, err)
 	}
@@ -1292,19 +1291,16 @@ func TestContainerNonExistentImage(t *testing.T) {
 	})
 
 	t.Run("the context cancellation is propagated to container creation", func(t *testing.T) {
-		// make sure you pull postgres:latest before running this test, using the AlwaysPullImage will
-		// cause an error with the context timeout which will cause this test to fail
 		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 		defer cancel()
 		_, err := GenericContainer(ctx, GenericContainerRequest{
 			ContainerRequest: ContainerRequest{
-				Image:      "golang:latest",
+				Image:      "postgres:latest",
 				WaitingFor: wait.ForLog("log"),
 				SkipReaper: true,
 			},
 			Started: true,
 		})
-
 		if !errors.Is(err, ctx.Err()) {
 			t.Fatalf("err should be a ctx cancelled error %v", err)
 		}
